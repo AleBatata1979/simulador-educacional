@@ -42,14 +42,11 @@ for l in lancamentos:
         valor = l["valor"]
         if conta in CATEGORIAS:
             categoria = CATEGORIAS[conta]
-            if tipo == "credito":
-                valores_base[categoria] += valor
-                ajuste = (1 + fatores.get(conta, 0)/100)
-                valores_novo[categoria] += valor * ajuste
-            else:
-                valores_base[categoria] -= valor
-                ajuste = (1 + fatores.get(conta, 0)/100)
-                valores_novo[categoria] -= valor * ajuste
+            sinal = 1 if tipo == "credito" else -1
+            valores_base[categoria] += sinal * valor
+
+            ajuste = 1 + (fatores.get(conta, 0) / 100)
+            valores_novo[categoria] += sinal * valor * ajuste
 
 def dre(val):
     receita = val["Receita"]
