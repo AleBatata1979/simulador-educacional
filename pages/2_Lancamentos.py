@@ -20,6 +20,7 @@ def carregar_lancamentos():
     return []
 
 def salvar_lancamento(lancamento):
+    os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
     lancamentos = carregar_lancamentos()
     lancamentos.append(lancamento)
     with open(DATA_PATH, "w") as f:
