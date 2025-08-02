@@ -1,0 +1,37 @@
+{
+    "1. Ativo": {
+        "1.1 Ativo Circulante": {
+            "1.1.1 Caixa": {},
+            "1.1.2 Banco": {},
+            "1.1.3 Clientes": {},
+            "1.1.4 Estoques": {}
+        },
+        "1.2 Ativo Não Circulante": {
+            "1.2.1 Imobilizado": {},
+            "1.2.2 Investimentos": {}
+        }
+    },
+    "2. Passivo": {
+        "2.1 Passivo Circulante": {
+            "2.1.1 Fornecedores": {},
+            "2.1.2 Empréstimos": {}
+        },
+        "2.2 Passivo Não Circulante": {
+            "2.2.1 Financiamentos de Longo Prazo": {}
+        }
+    },
+    "3. Patrimônio Líquido": {
+        "3.1 Capital Social": {}
+    },
+    "4. Receita": {
+        "4.1 Receita de Vendas": {},
+        "4.2 Outras Receitas": {}
+    },
+    "5. Despesas": {
+        "5.1 Custo das Mercadorias Vendidas": {},
+        "5.2 Despesas Administrativas": {},
+        "5.3 Salários": {},
+        "5.4 Aluguel": {},
+        "5.5 Outras Despesas": {}
+    }
+}
