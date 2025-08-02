@@ -21,3 +21,5 @@ if os.path.exists(file_path):
     mostrar_plano(plano)
 else:
     st.error("Plano de contas não encontrado.")
+
+    st.error("Plano de contas não encontrado.")
