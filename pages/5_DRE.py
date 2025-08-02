@@ -5,82 +5,94 @@ import os
 st.title("📉 Demonstração do Resultado do Exercício (DRE)")
 
 DATA_PATH = "data/lancamentos.json"
+PLANO_PATH = "data/plano_contas.json"
 
-# Categorias
-RECEITAS = ["Receita de Vendas"]
-CUSTOS = ["Custo das Mercadorias Vendidas"]
-DESPESAS_ADMIN = ["Despesas Administrativas"]
-SALARIOS = ["Salários"]
-ALUGUEL = ["Aluguel"]
-OUTRAS_RECEITAS = ["Outras Receitas"]
-OUTRAS_DESPESAS = ["Outras Despesas"]
-
+@st.cache_data
 def carregar_lancamentos():
     if os.path.exists(DATA_PATH):
-        with open(DATA_PATH, "r") as f:
+        with open(DATA_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
-# IR
-st.sidebar.header("⚙️ Parâmetros")
-ir_percentual = st.sidebar.slider("Alíquota de IR e Contribuições (%)", 0, 50, 15)
+@st.cache_data
+def carregar_plano():
+    if os.path.exists(PLANO_PATH):
+        with open(PLANO_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
 
 lancamentos = carregar_lancamentos()
-saldos = {
-    "receita_bruta": 0,
-    "deducoes": 0,
-    "cmv": 0,
-    "admin": 0,
-    "salarios": 0,
-    "aluguel": 0,
-    "outras_receitas": 0,
-    "outras_despesas": 0
-}
+plano = carregar_plano()
 
-for l in lancamentos:
-    for tipo in ["debito", "credito"]:
-        conta = l[tipo]
-        valor = l["valor"]
-        sinal = 1 if tipo == "credito" else -1
+# Variações simuladas
+receita_var = st.slider("Variação da Receita (%)", -50, 50, 0)
+custo_var = st.slider("Variação do Custo (%)", -50, 50, 0)
+despesa_var = st.slider("Variação das Despesas Operacionais (%)", -50, 50, 0)
+ir_percentual = st.slider("Percentual de IR e Contribuições (%)", 0, 30, 18)
 
-        if conta in RECEITAS:
-            saldos["receita_bruta"] += sinal * valor
-        elif conta in CUSTOS:
-            saldos["cmv"] += sinal * valor
-        elif conta in DESPESAS_ADMIN:
-            saldos["admin"] += sinal * valor
-        elif conta in SALARIOS:
-            saldos["salarios"] += sinal * valor
-        elif conta in ALUGUEL:
-            saldos["aluguel"] += sinal * valor
-        elif conta in OUTRAS_RECEITAS:
-            saldos["outras_receitas"] += sinal * valor
-        elif conta in OUTRAS_DESPESAS:
-            saldos["outras_despesas"] += sinal * valor
+# Saldos por tipo de conta
+saldos = {}
+for lanc in lancamentos:
+    debito = lanc["conta_debito"]
+    credito = lanc["conta_credito"]
+    valor = float(lanc["valor"])
+    saldos[debito] = saldos.get(debito, 0) + valor
+    saldos[credito] = saldos.get(credito, 0) - valor
 
-# Cálculos
-receita_liquida = saldos["receita_bruta"] - saldos["deducoes"]
-lucro_bruto = receita_liquida - saldos["cmv"]
-despesas_op = saldos["admin"] + saldos["salarios"] + saldos["aluguel"]
+# Agregar contas
+def obter(conta):
+    return sum(v for k, v in saldos.items() if conta.lower() in k.lower())
+
+receita_bruta = obter("Receita de Vendas")
+deducoes = 0
+receita_liquida = receita_bruta - deducoes
+cmv = abs(obter("Custo das Mercadorias Vendidas"))
+lucro_bruto = receita_liquida - cmv
+
+# Despesas Operacionais
+desp_admin = abs(obter("Despesas Administrativas"))
+salarios = abs(obter("Salários"))
+aluguel = abs(obter("Aluguel"))
+despesas_op = desp_admin + salarios + aluguel
+
 resultado_operacional = lucro_bruto - despesas_op
-resultado_antes_ir = resultado_operacional + saldos["outras_receitas"] - saldos["outras_despesas"]
-ir_valor = resultado_antes_ir * (ir_percentual / 100) if resultado_antes_ir > 0 else 0
-lucro_liquido = resultado_antes_ir - ir_valor
 
-# Exibição
-st.markdown("### 🧾 Resultado Resumido")
-st.write(f"**Receita Bruta:** R$ {saldos['receita_bruta']:,.2f}")
-st.write(f"**(-) Deduções:** R$ {saldos['deducoes']:,.2f}")
-st.write(f"**= Receita Líquida:** R$ {receita_liquida:,.2f}")
-st.write(f"**(-) Custo das Mercadorias Vendidas:** R$ {saldos['cmv']:,.2f}")
-st.write(f"**= Lucro Bruto:** R$ {lucro_bruto:,.2f}")
-st.write("**(-) Despesas Operacionais:**")
-st.write(f"&emsp;- Administrativas: R$ {saldos['admin']:,.2f}")
-st.write(f"&emsp;- Salários: R$ {saldos['salarios']:,.2f}")
-st.write(f"&emsp;- Aluguel: R$ {saldos['aluguel']:,.2f}")
-st.write(f"**= Resultado Operacional:** R$ {resultado_operacional:,.2f}")
-st.write(f"**(+) Outras Receitas:** R$ {saldos['outras_receitas']:,.2f}")
-st.write(f"**(-) Outras Despesas:** R$ {saldos['outras_despesas']:,.2f}")
-st.write(f"**= Resultado Antes do IR:** R$ {resultado_antes_ir:,.2f}")
-st.write(f"**(-) IR e Contribuições ({ir_percentual}%):** R$ {ir_valor:,.2f}")
-st.success(f"💰 Lucro Líquido do Exercício: R$ {lucro_liquido:,.2f}")
+outras_receitas = abs(obter("Outras Receitas"))
+outras_despesas = abs(obter("Outras Despesas"))
+resultado_antes_ir = resultado_operacional + outras_receitas - outras_despesas
+
+ir = resultado_antes_ir * (ir_percentual / 100)
+lucro_liquido = resultado_antes_ir - ir
+
+st.subheader("🧾 Resultado Resumido")
+
+def formatar(valor):
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+st.markdown(f"""
+**Receita Bruta:** {formatar(receita_bruta)}
+
+(-) Deduções: {formatar(deducoes)}
+
+= **Receita Líquida:** {formatar(receita_liquida)}
+
+(-) Custo das Mercadorias Vendidas: {formatar(cmv)}
+
+= **Lucro Bruto:** {formatar(lucro_bruto)}
+
+(-) Despesas Operacionais:  
+ - Administrativas: {formatar(desp_admin)}  
+ - Salários: {formatar(salarios)}  
+ - Aluguel: {formatar(aluguel)}  
+
+= **Resultado Operacional:** {formatar(resultado_operacional)}
+
+(+) Outras Receitas: {formatar(outras_receitas)}  
+(-) Outras Despesas: {formatar(outras_despesas)}  
+
+= **Resultado Antes do IR:** {formatar(resultado_antes_ir)}
+
+(-) IR e Contribuições ({ir_percentual}%): {formatar(ir)}
+
+💰 **Lucro Líquido do Exercício:** {formatar(lucro_liquido)}
+""")
